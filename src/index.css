@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #e23636; /* Marvel Red */
+  --color-gold: #f7a800; /* Iron Man Gold */
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e23636;
+  border-radius: 10px;
+}
+
+.marvel-gradient {
+  background: linear-gradient(135deg, #e23636 0%, #510000 100%);
+}
+
+.cinematic-glow {
+  box-shadow: 0 0 30px rgba(226, 54, 54, 0.4);
+}
+
+.glass-morphism {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 54, 54, 0.2);
+}
+
+.hero-text {
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 900;
+}
