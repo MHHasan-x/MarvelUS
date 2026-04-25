@@ -20,6 +20,14 @@ async function startServer() {
 
   const PORT = 3000;
 
+  // Track room state
+  const roomStates = new Map<string, {
+    videoUrl?: string;
+    currentTime: number;
+    isPlaying: boolean;
+    lastUpdated: number;
+  }>();
+
   // Socket.io Logic
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
@@ -28,14 +36,46 @@ async function startServer() {
       socket.join(roomId);
       console.log(`User ${username} (${socket.id}) joined room: ${roomId}`);
       
+      // Send current state to new user
+      const state = roomStates.get(roomId);
+      if (state) {
+        socket.emit('sync-video', {
+          action: state.isPlaying ? 'play' : 'pause',
+          currentTime: state.currentTime + (state.isPlaying ? (Date.now() - state.lastUpdated) / 1000 : 0),
+          videoUrl: state.videoUrl
+        });
+      }
+
       // Notify others in the room
       socket.to(roomId).emit('user-joined', { username, id: socket.id });
     });
 
     socket.on('sync-video', (data) => {
-      // data: { roomId, action: 'play' | 'pause' | 'seek', currentTime, videoUrl }
-      const { roomId, ...event } = data;
-      socket.to(roomId).emit('sync-video', event);
+      // data: { roomId, action: 'play' | 'pause' | 'seek' | 'url-change', currentTime, videoUrl }
+      const { roomId, action, currentTime, videoUrl } = data;
+      
+      let state = roomStates.get(roomId) || { currentTime: 0, isPlaying: false, lastUpdated: Date.now() };
+      
+      if (action === 'play') {
+        state.isPlaying = true;
+        state.lastUpdated = Date.now();
+        if (currentTime !== undefined) state.currentTime = currentTime;
+      } else if (action === 'pause') {
+        state.isPlaying = false;
+        state.lastUpdated = Date.now();
+        if (currentTime !== undefined) state.currentTime = currentTime;
+      } else if (action === 'seek') {
+        if (currentTime !== undefined) state.currentTime = currentTime;
+        state.lastUpdated = Date.now();
+      } else if (action === 'url-change') {
+        state.videoUrl = videoUrl;
+        state.currentTime = 0;
+        state.isPlaying = false;
+        state.lastUpdated = Date.now();
+      }
+
+      roomStates.set(roomId, state);
+      socket.to(roomId).emit('sync-video', { action, currentTime, videoUrl });
     });
 
     socket.on('chat-message', (data) => {
